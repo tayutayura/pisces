@@ -1,0 +1,5 @@
+---
+# tasks file for iptables
+- include: iptables.yml
+  become: yes
+  tags: iptables

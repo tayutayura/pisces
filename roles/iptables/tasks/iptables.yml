@@ -1,0 +1,14 @@
+---
+- name: iptables is configured
+  template:
+    src: iptables
+    dest: /etc/sysconfig/iptables
+    mode: 0600
+  notify:
+    - restart iptables
+
+- name: iptables is enabled and started
+  service:
+    name: iptables
+    state: started
+    enabled: yes

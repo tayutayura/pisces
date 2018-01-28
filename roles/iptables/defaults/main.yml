@@ -1,0 +1,6 @@
+---
+# defaults file for iptables
+iptables_accept_tcp_rules:
+  - port: 22
+  - port: 80
+  - port: 443
