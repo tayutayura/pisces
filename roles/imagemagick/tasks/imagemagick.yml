@@ -1,0 +1,41 @@
+---
+# tasks file for setup_packages
+
+- name: check if ImageMagick is installed.
+  stat:
+    path: /usr/local/bin/convert
+  register: convert
+
+- block:
+  - name: imagick source is downloaded
+    get_url:
+      url: "http://www.imagemagick.org/download/ImageMagick.tar.gz"
+      dest: /usr/local/src/ImageMagick.tar.gz
+
+  - name: /usr/local/src/ImageMagick is exists.
+    file:
+      path: "/usr/local/src/ImageMagick"
+      state: directory
+      mode: 0755
+
+  - name: unarchive ImageMagick.tar.gz
+    shell: /bin/bash -lc "tar -zxvf ImageMagick.tar.gz -C ImageMagick --strip=1"
+    args:
+      chdir: /usr/local/src
+      creates: "/usr/local/src/ImageMagick/README.txt"
+
+  - name: ./configure ImageMagick
+    shell: /bin/bash -lc "./configure"
+    args:
+      chdir: "/usr/local/src/ImageMagick"
+      creates: "/usr/local/src/ImageMagick/magick.sh"
+
+  - name: build imagick
+    command: make {{ item }}
+    args:
+      chdir: "/usr/local/src/ImageMagick"
+      creates: "/usr/local/bin/convert"
+    with_items:
+      - 
+      - install
+  when: not convert.stat.exists

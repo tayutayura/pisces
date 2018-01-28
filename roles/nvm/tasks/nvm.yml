@@ -1,0 +1,47 @@
+---
+- name: Check is nvm installed
+  shell: /bin/bash -lc "nvm --version"
+  register: nvm_version
+  ignore_errors: true
+  changed_when: false
+  check_mode: no
+
+- name: Check installed node versions
+  shell: /bin/bash -lc "nvm ls"
+  register: nvm_installed_versions
+  failed_when: false
+  changed_when: false
+  check_mode: no
+
+- name: Check which node version is global
+  shell: /bin/bash -lc "nvm current"
+  register: nvm_current_version
+  failed_when: false
+  changed_when: false
+  check_mode: no
+
+- name: Install script is downloaded
+  get_url:
+    url: "{{ nvm_script_url }}"
+    dest: "{{ nvm_tmp_dir }}"
+  when: nvm_version|failed
+
+- name: Run install script
+  command: bash "{{ nvm_tmp_dir }}/install.sh"
+  when: nvm_version|failed
+
+- name: Specified node version is installed
+  shell: /bin/bash -lc "nvm install {{ node_version }}"
+  when: "nvm_installed_versions.stdout.find( node_version ) == -1"
+
+- name: Global node version is specified one
+  shell: /bin/bash -lc "nvm use {{ node_version }}"
+  when: "nvm_current_version.stdout.find( node_version ) == -1"
+
+- name: node modules are installed
+  npm:
+    name: "{{ item }}"
+    global: yes
+  environment:
+    PATH: "~/.nvm/versions/node/{{ node_version }}/bin"
+  with_items: "{{ node_packages_to_global }}"

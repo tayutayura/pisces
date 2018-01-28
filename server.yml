@@ -1,0 +1,15 @@
+- hosts: webservers
+  roles:
+    - user
+    - sshd
+    - epel
+    - remi
+    - git
+    - imagemagick
+    - nginx
+    - varnish
+    - redis
+    - nvm
+    - php
+    - mysql
+    - tor

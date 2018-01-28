@@ -1,0 +1,16 @@
+---
+# tasks file for sshd
+- name: /etc/ssh/sshd_config is configured
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^PasswordAuthentication\syes$'
+    line: 'PasswordAuthentication no'
+    backrefs: yes
+  notify:
+    - restart sshd
+
+- name: sshd is enabled and started
+  service:
+    name: sshd
+    state: started
+    enabled: yes

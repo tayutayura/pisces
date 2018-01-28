@@ -1,0 +1,5 @@
+---
+# tasks file for nginx
+- include: nginx.yml
+  become: yes
+  tags: nginx

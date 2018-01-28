@@ -1,0 +1,5 @@
+---
+# tasks file for imagemagick
+- include: imagemagick.yml
+  become: yes
+  tags: imagemagick

@@ -1,0 +1,8 @@
+---
+- name: tor is installed
+  yum:
+    name: tor
+    enablerepo: epel
+    state: present
+  notify:
+    - restart tor

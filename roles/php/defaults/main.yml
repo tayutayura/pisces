@@ -1,0 +1,59 @@
+---
+# defaults file for php
+executor_name: tayutayura
+php_version: 5.6
+php_dependencies:
+  - curl-devel
+  - openssl-devel
+  - readline-devel
+  - libjpeg-devel
+  - libpng-devel
+  - libmcrypt-devel
+  - libtidy-devel
+  - re2c
+  - libwebp-devel
+  - libxslt-devel
+  - freetype-devel
+  - bzip2-devel
+  - t1lib-devel
+  - libxml2-devel
+  - libXpm-devel
+php_modules:
+  - php
+  - php-devel
+  - php-fpm
+  - gd-last
+  - php-gd
+  - php-mbstring
+  - php-mcrypt
+  - php-mysqlnd
+  - php-xml
+  - php-enchant
+  - php-pear
+php_imagick_version: 3.4.3
+php_ini_change_lines:
+  - regexp: '^error_reporting'
+    line: 'error_reporting = E_ALL'
+  - regexp: '^display_errors'
+    line: 'display_errors = On'
+  - regexp: '^upload_max_filesize'
+    line: 'upload_max_filesize = 8M'
+  - regexp: '^;?date.timezone'
+    line: 'date.timezone = "Asia/Tokyo"'
+  - regexp: '^;?mbstring.language'
+    line: 'mbstring.language = Japanese'
+  - regexp: '^;?mbstring.internal_encoding'
+    line: 'mbstring.internal_encoding = UTF-8'
+www_conf_change_lines:
+  - regexp: '^user'
+    line: "user = {{ executor_name }}"
+  - regexp: '^group'
+    line: "group = {{ executor_name }}"
+  - regexp: '^;?php_admin_value\[memory_limit\]'
+    line: 'php_admin_value[memory_limit] = 1024M'
+  - regexp: ';?\s?pm\s='
+    line: 'pm = static'
+  - regexp: ';?\s?pm.max_children\s='
+    line: 'pm.max_children = 4'
+  - regexp: ';?\s?pm.max_requests\s='
+    line: 'pm.max_requests = 500'

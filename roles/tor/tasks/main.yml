@@ -1,0 +1,5 @@
+---
+# tasks file for tor
+- include: tor.yml
+  become: yes
+  tags: tor

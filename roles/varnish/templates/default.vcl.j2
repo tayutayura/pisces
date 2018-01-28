@@ -1,0 +1,101 @@
+#
+# This is an example VCL file for Varnish.
+#
+# It does not do anything by default, delegating control to the
+# builtin VCL. The builtin VCL is called when there is no explicit
+# return statement.
+#
+# See the VCL chapters in the Users Guide at https://www.varnish-cache.org/docs/
+# and https://www.varnish-cache.org/trac/wiki/VCLExamples for more examples.
+
+# Marker to tell the VCL compiler that this VCL has been adapted to the
+# new 4.0 format.
+vcl 4.0;
+
+# Default backend definition. Set this to point to your content server.
+backend default {
+    .host = "{{ varnish_backend_host }}";
+    .port = "{{ varnish_backend_port }}";
+}
+
+acl purge {
+    "localhost";
+}
+
+import std;
+
+sub vcl_recv {
+    # Happens before we check if we have this in cache already.
+    #
+    # Typically you clean up the request here, removing cookies you don't need,
+    # rewriting the request, etc.
+
+    if (client.ip != "127.0.0.1" && req.http.X-Forwarded-Proto == "http") {
+        set req.http.x-redir = "https://" + req.http.host + req.url;
+        return (synth(750, ""));
+    }
+
+    # BAN settings
+    if (req.method == "BAN") {
+        if (!client.ip ~ purge) {
+            return(synth(403, "Not allowed."));
+        }
+        ban("req.url ~ /");
+        return(synth(200, "Ban added"));
+    }
+
+    if (req.http.Accept-Encoding) {
+        if (req.http.Accept-Encoding ~ "gzip") {
+            # If the browser supports it, we'll use gzip.
+            set req.http.Accept-Encoding = "gzip";
+        }
+        else if (req.http.Accept-Encoding ~ "deflate") {
+            # Next, try deflate if it is supported.
+            set req.http.Accept-Encoding = "deflate";
+        }
+        else {
+            # Unknown algorithm. Remove it and send unencoded.
+            unset req.http.Accept-Encoding;
+        }
+    }
+
+    if (req.restarts == 0) {
+        if (req.http.x-forwarded-for) {
+            set req.http.X-Forwarded-For =
+        req.http.X-Forwarded-For + ", " + client.ip;
+        } else {
+            set req.http.X-Forwarded-For = client.ip;
+        }
+    }
+
+    if (req.method != "GET") {
+        return (pipe);
+    }
+
+    return (hash);
+}
+
+sub vcl_backend_response {
+    # Happens after we have read the response headers from the backend.
+    #
+    # Here you clean the response headers, removing silly Set-Cookie headers
+    # and other mistakes your backend does.
+}
+
+sub vcl_deliver {
+    # Happens when we have all the pieces we need, and are about to send the
+    # response to the client.
+    #
+    # You can do accounting or modifying the final object here.
+}
+
+sub vcl_synth {
+    # Listen to 750 status from vcl_recv.
+    if (resp.status == 750) {
+        # Redirect to HTTPS with 301 status.
+        set resp.status = 301;
+        set resp.http.Location = req.http.x-redir;
+        return(deliver);
+    }
+}
+

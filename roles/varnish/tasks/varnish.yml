@@ -1,0 +1,54 @@
+---
+- name: include variables
+  include_vars: "{{ ansible_distribution }}-{{ ansible_distribution_major_version }}.yml"
+
+- name: Install script is downloaded
+  get_url:
+    url: https://packagecloud.io/install/repositories/varnishcache/varnish5/script.rpm.sh
+    dest: "{{ varnish_tmp_dir }}"
+
+- name: Install script is executed
+  command: bash "{{ varnish_tmp_dir }}/script.rpm.sh"
+  args:
+    creates: /etc/yum.repos.d/varnishcache_varnish5.repo
+
+- name: /etc/yum.repos.d/varnishcache_varnish5.repo is configured
+  lineinfile:
+    path: /etc/yum.repos.d/varnishcache_varnish5.repo
+    insertafter: '^\[varnishcache_varnish5\]$'
+    line: 'priority=1'
+
+- name: Install varnish
+  yum:
+    name: "{{ item }}"
+    state: present
+    enablerepo: varnishcache_varnish5
+  with_items:
+    - varnish
+    - varnish-devel
+
+- name: Replace varnish configuration file
+  template:
+    src: "{{ varnish_configuration_file.src }}"
+    dest: "{{ varnish_configuration_file.dest }}"
+    owner: root
+    group: root
+    mode: 0644
+  notify:
+    - restart varnish
+
+- name: Replace /etc/varnish/default.vcl
+  template:
+    src: default.vcl.j2
+    dest: /etc/varnish/default.vcl
+    owner: root
+    group: root
+    mode: 0644
+  notify:
+    - restart varnish
+
+- name: varnish started
+  service:
+    name: varnish
+    state: started
+    enabled: yes

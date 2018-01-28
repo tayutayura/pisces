@@ -1,0 +1,12 @@
+[centos]
+
+[ubuntu]
+[ubuntu:vars]
+ansible_python_interpreter=/usr/bin/python3
+
+[webservers:children]
+centos
+ubuntu
+
+[production:children]
+webservers

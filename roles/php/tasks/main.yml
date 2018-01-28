@@ -1,0 +1,5 @@
+---
+# tasks file for php
+- include: php.yml
+  become: yes
+  tags: php

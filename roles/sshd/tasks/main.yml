@@ -1,0 +1,5 @@
+---
+# tasks file for sshd
+- include: sshd.yml
+  become: yes
+  tags: sshd

@@ -1,0 +1,6 @@
+---
+# tasks file for nvm
+- include: nvm.yml
+  become: yes
+  become_user: "{{ executor_name }}"
+  tags: nvm

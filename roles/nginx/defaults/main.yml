@@ -1,0 +1,5 @@
+---
+# defaults file for nginx
+executor_name: nginx
+nginx_listen_port: 80
+nginx_client_max_body_size: 128M

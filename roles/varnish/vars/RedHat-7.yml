@@ -1,0 +1,5 @@
+---
+# vars file for varnish
+varnish_configuration_file:
+  src: varnish.params.j2
+  dest: /etc/varnish/varnish.params

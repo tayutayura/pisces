@@ -1,0 +1,14 @@
+---
+# defaults file for user
+
+user_groups:
+  - name: tayutayura  # group name
+    sudo: yes # [optional] enable / disable sudo
+user_users:
+  - name: tayutayura    # users name
+    group: tayutayura   # users group name
+    password: password  # users password
+    # [optional] please create authorized_keys file in files/ directory and specify its path
+    authorized_keys: authorized_keys
+    # [optional] please create secret_key file in files/ directory and specify its path
+    # secret_key: id_rsa.pem

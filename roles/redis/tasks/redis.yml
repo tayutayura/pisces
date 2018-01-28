@@ -1,0 +1,12 @@
+---
+- name: redis is installed
+  yum:
+    name: redis
+    enablerepo: remi
+    state: present
+
+- name: redis started
+  service:
+    name: redis
+    state: started
+    enabled: yes

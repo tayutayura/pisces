@@ -1,0 +1,5 @@
+---
+# tasks file for redis
+- include: redis.yml
+  become: yes
+  tags: redis

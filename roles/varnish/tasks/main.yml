@@ -1,0 +1,9 @@
+---
+# tasks file for varnish
+- include: selinux.yml
+  become: yes
+  tags: varnish
+
+- include: varnish.yml
+  become: yes
+  tags: varnish

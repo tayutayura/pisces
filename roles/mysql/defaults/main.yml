@@ -1,0 +1,7 @@
+---
+# defaults file for mysql
+mysql_version: 5.6
+mysql_repository: mysql56-community
+mysql_root_password: Asdf1234@
+mysql_executor_name: tayutayura
+mysql_executor_password: Asdf1234@

@@ -1,0 +1,50 @@
+---
+- name: groups are created
+  group:
+    name: "{{ item.name }}"
+  with_items: "{{ user_groups }}"
+
+- name: users are created
+  user:
+    name: "{{ item.name }}"
+    state: present
+    password: "{{ item.password | password_hash('sha512') }}"
+    groups: "{{ item.group }}"
+  with_items: "{{ user_users }}"
+
+- name: chmod 0700 ~/.ssh
+  file:
+    path: "/home/{{ item.name }}/.ssh"
+    state: directory
+    owner: "{{ item.name }}"
+    group: "{{ item.name }}"
+    mode: 0700
+  with_items: "{{ user_users }}"
+
+- name: Authorized keys are deployed
+  copy:
+    src: "{{ item.authorized_keys }}"
+    dest: "/home/{{ item.name }}/.ssh/authorized_keys"
+    owner: "{{ item.name }}"
+    group: "{{ item.name }}"
+    mode: 0600
+  with_items: "{{ user_users }}"
+  when: item.authorized_keys is defined
+
+- name: Secret keys are deployed
+  copy:
+    src: "{{ item.secret_key }}"
+    dest: "/home/{{ item.name }}/.ssh"
+    owner: "{{ item.name }}"
+    group: "{{ item.name }}"
+    mode: 0400
+  with_items: "{{ user_users }}"
+  when: item.secret_key is defined
+
+- name: /etc/sudoers is configured
+  lineinfile:
+    path: /etc/sudoers
+    insertafter: '^#.*NOPASSWD\:\sALL$'
+    line: "%{{ item.name }}\tALL=(ALL)\tNOPASSWD: ALL"
+  with_items: "{{ user_groups }}"
+  when: item.sudo | default(False) | bool

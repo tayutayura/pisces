@@ -1,0 +1,53 @@
+---
+- name: include variables
+  include_vars: "{{ ansible_distribution }}-{{ ansible_distribution_major_version }}.yml"
+
+- name: mysql57-community-release repository is installed
+  yum:
+    name: "{{ mysql_repository_url }}"
+    state: present
+
+- name: disable all mysql repositories
+  replace:
+    path: "/etc/yum.repos.d/mysql-community.repo"
+    regexp: '^enabled=1$'
+    replace: "enabled=0"
+
+- name: mysql package is installed
+  yum:
+    name: mysql-community-server
+    state: present
+    enablerepo: "mysql{{ mysql_version|replace('.', '') }}-community"
+
+# - name: Run save-tmp-password.sh
+#   script: save-tmp-password.sh
+#   args:
+#     creates: /root/tmp.my.cnf
+#
+# - name: new password for root is configured
+#   script: change-root-password.sh --p "{{ mysql_root_password }}"
+#   args:
+#     creates: /root/my.cnf
+#
+# - name: Execution user is created
+#   shell: mysql --defaults-file=/root/my.cnf -e "GRANT ALL ON *.* TO {{ mysql_executor_name }} IDENTIFIED BY '{{mysql_executor_password }}'"
+
+- name: added line to /etc/my.cnf
+  lineinfile:
+    path: /etc/my.cnf
+    insertafter: '^\[mysqld\]$'
+    line: 'character-set-server=utf8'
+
+- name: added block to /etc/my.cnf
+  blockinfile:
+    path: /etc/my.cnf
+    content: |
+      [client]
+      default-character-set=utf8
+
+- name: mysql started
+  service:
+    name: mysqld
+    state: started
+    enabled: yes
+

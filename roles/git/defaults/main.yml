@@ -1,0 +1,15 @@
+---
+# defaults file for git
+workspace: "/tmp"
+git_dependencies:
+  - gcc
+  - gcc-c++
+  - curl-devel
+  - expat-devel
+  - gettext-devel
+  - openssl-devel
+  - zlib-devel
+  - perl-ExtUtils-MakeMaker
+git_version: 2.13.0
+git_install_path: "/usr"
+git_reinstall: false
