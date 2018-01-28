@@ -2,6 +2,7 @@
   roles:
     - user
     - sshd
+    - utility
     - epel
     - remi
     - git

@@ -1,0 +1,11 @@
+---
+# defaults file for utility
+utility_packages:
+  - wget
+  - git
+  - rsync
+  - postfix
+  - nfs-utils
+  - pkgconfig
+  - htop
+  - "@Development Tools"
