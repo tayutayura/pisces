@@ -1,0 +1,6 @@
+---
+# defaults file for composer
+executor_name: tayutayura
+composer_path: /usr/bin/composer
+composer_keep_updated: true
+composer_home_path: "~/.composer"

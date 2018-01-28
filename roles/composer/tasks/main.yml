@@ -1,0 +1,4 @@
+---
+# tasks file for composer
+- include: composer.yml
+  tags: composer
