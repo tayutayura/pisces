@@ -1,0 +1,5 @@
+---
+# tasks file for nginx_config
+- include: nginx_config.yml
+  become: yes
+  tags: nginx_config

@@ -14,5 +14,6 @@
     - php
     - mysql
     - tor
+    - nginx_config
     # - composer
     # - iptables

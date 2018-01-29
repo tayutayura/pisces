@@ -1,0 +1,75 @@
+---
+- name: python-passlib is installed
+  yum:
+    name: python-passlib
+    enablerepo: epel
+    state: present
+
+- name: /etc/nginx/conf.d/* are replaced
+  template:
+    src: "{{ item.config_src }}"
+    dest: "/etc/nginx/conf.d/{{ item.config_dest }}"
+    mode: 0644
+  with_items: "{{ nginx_hosts }}"
+  notify:
+    - restart nginx
+
+- name: /etc/nginx/.htpasswd is deployed
+  htpasswd:
+    path: /etc/nginx/.htpasswd
+    name: "{{ nginx_htpasswd.name }}"
+    password: "{{ nginx_htpasswd.password }}"
+    mode: 0644
+
+- name: Ensure directory /etc/pki/nginx
+  file:
+    path: /etc/pki/nginx
+    state: directory
+    mode: 0755
+
+- name: Ensure directory /etc/pki/nginx/private
+  file:
+    path: /etc/pki/nginx/private
+    state: directory
+    mode: 0755
+
+- name: Deploy CSR file.
+  copy:
+    src: "{{ item.csr_src }}"
+    dest: "{{ item.csr_dest }}"
+    mode: 0644
+  with_items: "{{ nginx_hosts }}"
+  when: item.csr_src is defined and item.csr_dest is defined
+
+- name: Deploy Key file.
+  copy:
+    src: "{{ item.csr_src }}"
+    dest: "{{ item.csr_dest }}"
+    mode: 0644
+  with_items: "{{ nginx_hosts }}"
+  when: item.key_src is defined and item.key_dest is defined
+
+- name: chown /var/www
+  file:
+    path: /var/www
+    state: directory
+    owner: "{{ executor_name }}"
+
+- name: chown /var/log/nginx
+  file:
+    path: /var/log/nginx
+    state: directory
+    owner: "{{ executor_name }}"
+
+- name: Ensure directory /var/log/nginx/*
+  file:
+    path: /var/log/nginx/{{ item.name }}
+    state: directory
+    owner: "{{ executor_name }}"
+  with_items: "{{ nginx_hosts }}"
+
+- name: nginx started
+  service:
+    name: nginx
+    state: started
+    enabled: yes

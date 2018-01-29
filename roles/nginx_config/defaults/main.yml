@@ -1,0 +1,16 @@
+---
+# defaults file for nginx_config
+executor_name: tayutayura
+nginx_hosts:
+  - name: service
+    config_src: service.conf.j2
+    config_dest: service.conf
+    # csr_src: service.csr
+    # csr_dest: /etc/pki/nginx/service.csr.pem
+    # key_src: service.key
+    # key_dest: /etc/pki/nginx/private/service.key.pem
+nginx_htpasswd:
+  name: tayutayura
+  password: password
+nginx_env: development
+nginx_listen_port: 80
