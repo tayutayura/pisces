@@ -1,23 +1,9 @@
 ---
 # defaults file for php
 executor_name: tayutayura
-php_version: 5.6
+php_version: 7.2
 php_dependencies:
-  - curl-devel
-  - openssl-devel
-  - readline-devel
-  - libjpeg-devel
-  - libpng-devel
-  - libmcrypt-devel
-  - libtidy-devel
   - re2c
-  - libwebp-devel
-  - libxslt-devel
-  - freetype-devel
-  - bzip2-devel
-  - t1lib-devel
-  - libxml2-devel
-  - libXpm-devel
 php_modules:
   - php
   - php-devel
@@ -25,11 +11,10 @@ php_modules:
   - gd-last
   - php-gd
   - php-mbstring
-  - php-mcrypt
   - php-mysqlnd
   - php-xml
-  - php-enchant
   - php-pear
+  - php-pecl-zip
 php_imagick_version: 3.4.3
 php_ini_change_lines:
   - regexp: '^error_reporting'

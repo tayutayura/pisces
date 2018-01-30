@@ -1,0 +1,57 @@
+---
+- name: make clean when update php.
+  command: make clean
+  args:
+    chdir: /usr/local/src/phpredis
+  when: "php_version|string not in php_installed_version.stdout"
+
+- name: redis.so is removed when update php.
+  file:
+    path: "{{ item }}"
+    state: absent
+  with_items:
+    - /usr/local/src/phpredis/build
+    - /usr/lib64/php/modules/redis.so
+  when: "php_version|string not in php_installed_version.stdout"
+
+- name: check if phpredis is installed.
+  stat:
+    path: /usr/lib64/php/modules/redis.so
+  register: redis_so
+
+- block:
+  - name: phpredis/phpredis is installed
+    command: git clone git://github.com/phpredis/phpredis.git /usr/local/src/phpredis
+    args:
+      creates: /usr/local/src/phpredis/README.markdown
+
+  - name: phpize phpredis
+    shell: /bin/bash -lc "phpize"
+    args:
+      chdir: /usr/local/src/phpredis
+      creates: /usr/local/src/phpredis/build
+
+  - name: ./configure phpredis
+    shell: /bin/bash -lc "./configure"
+    args:
+      chdir: /usr/local/src/phpredis
+      creates: "/usr/lib64/php/modules/redis.so"
+
+  - name: build phpredis
+    command: make {{ item }}
+    args:
+      chdir: /usr/local/src/phpredis
+      creates: "/usr/lib64/php/modules/redis.so"
+    with_items:
+      - 
+      - install
+  when: not redis_so.stat.exists
+
+- name: Ensure /etc/php.d/50-redis.ini
+  lineinfile:
+    path: /etc/php.d/50-redis.ini
+    line: extension=redis.so
+    create: true
+    mode: 0644
+  notify:
+    - restart php-fpm

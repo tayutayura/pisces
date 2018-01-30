@@ -1,19 +1,19 @@
 - hosts: webservers
   roles:
+    - utility
     - user
     - sshd
-    - utility
     - epel
     - remi
     - git
-    - imagemagick
+    - mysql
     - nginx
+    - nginx_config
     - varnish
     - redis
+    - imagemagick
     - nvm
     - php
-    - mysql
-    - tor
-    - nginx_config
-    # - composer
+    - composer
+    # - tor
     # - iptables

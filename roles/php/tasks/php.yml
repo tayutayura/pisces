@@ -1,4 +1,17 @@
 ---
+- name: Regist php_installed_version
+  command: php -v
+  changed_when: false
+  failed_when: false
+  check_mode: no
+  register: php_installed_version
+
+- name: PHP modules are uninstalled when update php.
+  yum:
+    name: php*
+    state: absent
+  when: "php_version|string not in php_installed_version.stdout"
+
 - name: PHP dependencies are installed
   yum:
     name: "{{ php_dependencies }}"
@@ -33,96 +46,11 @@
   notify:
     - restart php-fpm
 
+- include: phpredis.yml
+- include: imagick.yml
+
 - name: php-fpm is started
   service:
     name: php-fpm
     state: started
     enabled: yes
-
-- name: check if phpredis is installed.
-  stat:
-    path: /usr/lib64/php/modules/redis.so
-  register: redis_so
-
-- block:
-  - name: phpredis/phpredis is installed
-    command: git clone git://github.com/phpredis/phpredis.git /usr/local/src/phpredis
-    args:
-      creates: /usr/local/src/phpredis/README.markdown
-
-  - name: phpize phpredis
-    shell: /bin/bash -lc "phpize"
-    args:
-      chdir: /usr/local/src/phpredis
-      creates: /usr/local/src/phpredis/build
-
-  - name: ./configure phpredis
-    shell: /bin/bash -lc "./configure"
-    args:
-      chdir: /usr/local/src/phpredis
-      creates: "/usr/lib64/php/modules/redis.so"
-
-  - name: build phpredis
-    command: make {{ item }}
-    args:
-      chdir: /usr/local/src/phpredis
-      creates: "/usr/lib64/php/modules/redis.so"
-    with_items:
-      - 
-      - install
-  when: not redis_so.stat.exists
-
-- name: check if imagick is installed.
-  stat:
-    path: /usr/lib64/php/modules/imagick.so
-  register: imagick_so
-
-- block:
-  - name: imagick source is downloaded
-    get_url:
-      url: "https://pecl.php.net/get/imagick-{{ php_imagick_version }}.tgz"
-      dest: /usr/local/src/imagick.tgz
-
-  - name: unarchive imagick.tgz
-    shell: /bin/bash -lc "gzip -dc imagick.tgz | tar xvf -"
-    args:
-      chdir: /usr/local/src
-      creates: "/usr/local/src/imagick-{{ php_imagick_version }}"
-
-  - name: phpize imagick
-    shell: /bin/bash -lc "phpize"
-    args:
-      chdir: "/usr/local/src/imagick-{{ php_imagick_version }}"
-      creates: "/usr/local/src/imagick-{{ php_imagick_version }}/build"
-
-  - name: ./configure imagick
-    shell: /bin/bash -lc "./configure --with-imagick=/opt/local"
-    args:
-      chdir: "/usr/local/src/imagick-{{ php_imagick_version }}"
-      creates: "/usr/lib64/php/modules/imagick.so"
-
-  - name: build imagick
-    command: make {{ item }}
-    args:
-      chdir: "/usr/local/src/imagick-{{ php_imagick_version }}"
-      creates: "/usr/lib64/php/modules/imagick.so"
-    with_items:
-      - 
-      - install
-  when: not imagick_so.stat.exists
-
-- name: added block to /etc/php.ini for redis and imagick
-  blockinfile:
-    path: "/etc/php.ini"
-    marker: ";{mark} ansible managed block"
-    content: |
-      [redis]
-      extension_dir = "/usr/lib64/php/modules/"
-      extension=redis.so
-
-      [imagick]
-      extension_dir = "/usr/lib64/php/modules/"
-      extension=imagick.so
-  notify:
-    - restart php-fpm
-

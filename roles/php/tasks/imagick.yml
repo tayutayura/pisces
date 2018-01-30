@@ -1,0 +1,63 @@
+---
+- name: make clean when update php.
+  command: make clean
+  args:
+    chdir: "/usr/local/src/imagick-{{ php_imagick_version }}"
+  when: "php_version|string not in php_installed_version.stdout"
+
+- name: imagick.so is removed when update php.
+  file:
+    path: "{{ item }}"
+    state: absent
+  with_items:
+    - "/usr/local/src/imagick-{{ php_imagick_version }}/build"
+    - /usr/lib64/php/modules/imagick.so
+  when: "php_version|string not in php_installed_version.stdout"
+
+- name: check if imagick is installed.
+  stat:
+    path: /usr/lib64/php/modules/imagick.so
+  register: imagick_so
+
+- block:
+  - name: imagick source is downloaded
+    get_url:
+      url: "https://pecl.php.net/get/imagick-{{ php_imagick_version }}.tgz"
+      dest: /usr/local/src/imagick.tgz
+
+  - name: unarchive imagick.tgz
+    shell: /bin/bash -lc "gzip -dc imagick.tgz | tar xvf -"
+    args:
+      chdir: /usr/local/src
+      creates: "/usr/local/src/imagick-{{ php_imagick_version }}"
+
+  - name: phpize imagick
+    shell: /bin/bash -lc "phpize"
+    args:
+      chdir: "/usr/local/src/imagick-{{ php_imagick_version }}"
+      creates: "/usr/local/src/imagick-{{ php_imagick_version }}/build"
+
+  - name: ./configure imagick
+    shell: /bin/bash -lc "./configure --with-imagick=/opt/local"
+    args:
+      chdir: "/usr/local/src/imagick-{{ php_imagick_version }}"
+      creates: "/usr/lib64/php/modules/imagick.so"
+
+  - name: build imagick
+    command: make {{ item }}
+    args:
+      chdir: "/usr/local/src/imagick-{{ php_imagick_version }}"
+      creates: "/usr/lib64/php/modules/imagick.so"
+    with_items:
+      - 
+      - install
+  when: not imagick_so.stat.exists
+
+- name: Ensure /etc/php.d/50-imagick.ini
+  lineinfile:
+    path: /etc/php.d/50-imagick.ini
+    line: extension=imagick.so
+    create: true
+    mode: 0644
+  notify:
+    - restart php-fpm
