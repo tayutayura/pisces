@@ -1,0 +1,124 @@
+---
+- name: Repositories are installed
+  yum:
+    name: "{{ item }}"
+    enablerepo: epel
+    state: present
+  become_user: root
+  with_items: "{{ phpenv_php_dependencies }}"
+
+- name: Check if phpenv is installed ( and which php version is installed )
+  shell: /bin/bash -lc "phpenv versions"
+  register: phpenv_installed_versions
+  ignore_errors: true
+  changed_when: false
+  check_mode: no
+
+- name: Check which php version is global
+  shell: /bin/bash -lc "phpenv version"
+  ignore_errors: true
+  changed_when: false
+  check_mode: no
+  register: phpenv_global_version
+
+- block:
+  - name: CHH/phpenv is installed
+    command: "git clone git://github.com/CHH/phpenv.git {{ phpenv_tmp_dir }}/phpenv"
+    args:
+      creates: "{{ phpenv_tmp_dir }}/phpenv/README.md"
+
+  - name: php-install.sh is executed
+    shell: "PHPENV_ROOT={{ phpenv_dir }} . {{ phpenv_tmp_dir }}/phpenv/bin/phpenv-install.sh"
+    args:
+      creates: "{{ phpenv_dir }}/README.md"
+
+  - name: phpenv path is added to ~/.bashrc
+    lineinfile:
+      path: "/home/{{ executor_name }}/.bashrc"
+      line: "{{ item }}"
+    with_items:
+      - export PHPENV_ROOT="$HOME/.phpenv"
+      - export PATH="$PHPENV_ROOT/bin:$PATH"
+      - eval "$(phpenv init -)"
+
+  - name: "Ensure {{ phpenv_dir }}/plugins"
+    file:
+      path: "{{ phpenv_dir }}/plugins"
+      state: directory
+      mode: 0755
+
+  - name: CHH/php-build is installed
+    command: git clone git://github.com/CHH/php-build.git "{{ phpenv_dir }}/plugins/php-build"
+    args:
+      creates: "{{ phpenv_dir }}/plugins/php-build/README.md"
+  when: phpenv_installed_versions|failed
+
+- block:
+  - name: Specified php version is installed
+    shell: /bin/bash -lc "phpenv install {{ phpenv_php_version }}"
+
+  - name: php-fpm.conf is deployed
+    copy:
+      src: "{{ phpenv_php_version_dir }}/etc/php-fpm.conf.default"
+      dest: "{{ phpenv_php_version_dir }}/etc/php-fpm.conf"
+      mode: 0644
+      remote_src: true
+
+  - name: php-fpm.conf is deployed
+    copy:
+      src: "{{ phpenv_php_version_dir }}/etc/php-fpm.d/www.conf.default"
+      dest: "{{ phpenv_php_version_dir }}/etc/php-fpm.d/www.conf"
+      mode: 0644
+      remote_src: true
+  when: "phpenv_installed_versions.stdout.find( phpenv_php_version ) == -1"
+
+- block:
+  - name: Global php version is specified one
+    shell: /bin/bash -lc "phpenv global {{ phpenv_php_version }}"
+
+  - name: phpenv rehash
+    shell: /bin/bash -lc "phpenv rehash"
+
+  - name: php-fpm is stopped
+    service:
+      name: php-fpm
+      state: stopped
+    become_user: root
+
+  - name: /etc/init.d/php-fpm is replaced
+    copy:
+      src: "/tmp/php-build/source/{{ phpenv_php_version }}/sapi/fpm/init.d.php-fpm"
+      dest: /etc/init.d/php-fpm
+      mode: 0755
+      remote_src: true
+    become_user: root
+
+  - name: php-fpm is started
+    service:
+      name: php-fpm
+      state: started
+      enabled: yes
+    become_user: root
+  when: "phpenv_global_version.stdout.find( phpenv_php_version ) == -1"
+
+- name: php-fpm.conf is configured
+  lineinfile:
+    path: "{{ phpenv_php_version_dir }}/etc/php-fpm.d/www.conf"
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+    backrefs: yes
+  with_items: "{{ www_conf_change_lines }}"
+  notify:
+    - restart php-fpm
+
+- name: php.ini is configured
+  lineinfile:
+    path: "{{ phpenv_php_version_dir }}/etc/php.ini"
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+    backrefs: yes
+  with_items: "{{ php_ini_change_lines }}"
+  notify:
+    - restart php-fpm
+
+- include: phpredis.yml
