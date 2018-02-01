@@ -1,0 +1,22 @@
+---
+- name: riywo/anyenv is installed
+  command: git clone https://github.com/riywo/anyenv "{{ anyenv_dir }}"
+  args:
+    creates: "{{ anyenv_dir }}/bin/anyenv"
+
+- name: anyenv path is added to ~/.bashrc
+  lineinfile:
+    path: "/home/{{ executor_name }}/.bashrc"
+    line: "{{ item }}"
+  with_items:
+    - export PATH="$HOME/.anyenv/bin:$PATH"
+    - eval "$(anyenv init -)"
+
+- name: Check installed anyenv plugins
+  shell: /bin/bash -lc "anyenv version"
+  failed_when: false
+  changed_when: false
+  check_mode: no
+  register: anyenv_versions
+
+- include: phpenv.yml

@@ -1,0 +1,61 @@
+---
+# 指定したバージョンに phpredis がインストールされているか確認
+- name: check if phpredis is installed.
+  shell: /bin/bash -lc "php -m"
+  failed_when: false
+  changed_when: false
+  check_mode: no
+  register: php_compiled_modules
+
+# 指定したバージョンに phpredis がインストールされていない場合
+# phpredis のダウンロード
+# make clean
+# build/ 以下を削除
+# phpize
+# configure
+# make && make install
+- block:
+  - name: phpredis/phpredis is installed
+    command: git clone git://github.com/phpredis/phpredis.git /tmp/phpredis
+    args:
+      creates: /tmp/phpredis/README.markdown
+
+  - name: make clean when update php.
+    command: make clean
+    args:
+      chdir: /tmp/phpredis
+
+  - name: redis.so is removed when update php.
+    file:
+      path: /tmp/phpredis/build
+      state: absent
+
+  - name: phpize phpredis
+    shell: /bin/bash -lc "phpize"
+    args:
+      chdir: /tmp/phpredis
+      creates: /tmp/phpredis/build
+
+  - name: ./configure phpredis
+    shell: /bin/bash -lc "./configure"
+    args:
+      chdir: /tmp/phpredis
+
+  - name: build phpredis
+    command: make {{ item }}
+    args:
+      chdir: /tmp/phpredis
+    with_items:
+      - 
+      - install
+
+  - name: "Ensure {{ anyenv_php_version_dir }}/etc/conf.d/50-redis.ini"
+    lineinfile:
+      path: "{{ anyenv_php_version_dir }}/etc/conf.d/50-redis.ini"
+      line: extension=redis.so
+      create: true
+      mode: 0644
+    notify:
+      - restart php-fpm
+  when: "'redis' not in php_compiled_modules.stdout"
+

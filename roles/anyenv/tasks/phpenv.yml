@@ -1,0 +1,108 @@
+---
+- name: phpenv is installed
+  shell: /bin/bash -lc "anyenv install phpenv"
+  args:
+    creates: "{{ anyenv_phpenv_dir }}/bin/phpenv"
+  when: "'phpenv' not in anyenv_versions.stdout"
+
+- name: Repositories are installed
+  yum:
+    name: "{{ item }}"
+    enablerepo: epel
+    state: present
+  become_user: root
+  with_items: "{{ anyenv_php_dependencies }}"
+
+- name: Check which php version is installed
+  shell: /bin/bash -lc "phpenv versions"
+  changed_when: false
+  check_mode: no
+  register: phpenv_installed_versions
+
+- name: Check which php version is global
+  shell: /bin/bash -lc "phpenv version"
+  changed_when: false
+  check_mode: no
+  register: phpenv_global_version
+
+# install_versions に指定したバージョンが無い場合
+# 指定したバージョンのインストール
+# php-fpm の作成
+# www.conf の作成
+- block:
+  - name: Specified php version is installed
+    shell: /bin/bash -lc "phpenv install {{ anyenv_php_version }}"
+
+  - name: php-fpm.conf is deployed
+    copy:
+      src: "{{ anyenv_php_version_dir }}/etc/php-fpm.conf.default"
+      dest: "{{ anyenv_php_version_dir }}/etc/php-fpm.conf"
+      mode: 0644
+      remote_src: true
+
+  - name: php-fpm.conf is deployed
+    copy:
+      src: "{{ anyenv_php_version_dir }}/etc/php-fpm.d/www.conf.default"
+      dest: "{{ anyenv_php_version_dir }}/etc/php-fpm.d/www.conf"
+      mode: 0644
+      remote_src: true
+  when: "phpenv_installed_versions.stdout.find( anyenv_php_version ) == -1"
+
+# 現在のバージョンが指定したものでない場合
+# php-fpm の停止
+# 現在のバージョンを指定したものに変更
+# php-fpm 起動スクリプトをコピー
+# php-fpm の起動
+- block:
+  - name: Global php version is specified one
+    shell: /bin/bash -lc "phpenv global {{ anyenv_php_version }}"
+
+  - name: phpenv rehash
+    shell: /bin/bash -lc "phpenv rehash"
+
+  - name: php-fpm is stopped
+    service:
+      name: php-fpm
+      state: stopped
+    become_user: root
+
+  - name: /etc/init.d/php-fpm is replaced
+    copy:
+      src: "/tmp/php-build/source/{{ anyenv_php_version }}/sapi/fpm/init.d.php-fpm"
+      dest: /etc/init.d/php-fpm
+      mode: 0755
+      remote_src: true
+    become_user: root
+
+  - name: php-fpm is started
+    service:
+      name: php-fpm
+      state: started
+      enabled: yes
+    become_user: root
+  when: "phpenv_global_version.stdout.find( anyenv_php_version ) == -1"
+
+# 条件なしに
+# php-fpm.conf の編集
+# php.ini の編集
+- name: php-fpm.conf is configured
+  lineinfile:
+    path: "{{ anyenv_php_version_dir }}/etc/php-fpm.d/www.conf"
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+    backrefs: yes
+  with_items: "{{ www_conf_change_lines }}"
+  notify:
+    - restart php-fpm
+
+- name: php.ini is configured
+  lineinfile:
+    path: "{{ anyenv_php_version_dir }}/etc/php.ini"
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+    backrefs: yes
+  with_items: "{{ php_ini_change_lines }}"
+  notify:
+    - restart php-fpm
+
+- include: phpenv/phpredis.yml

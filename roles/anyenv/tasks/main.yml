@@ -1,0 +1,6 @@
+---
+# tasks file for anyenv
+- include: anyenv.yml
+  become: yes
+  become_user: "{{ executor_name }}"
+  tags: anyenv

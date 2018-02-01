@@ -1,0 +1,52 @@
+---
+# defaults file for anyenv
+executor_name: tayutayura
+anyenv_dir: ~/.anyenv
+anyenv_tmp_dir: /tmp
+anyenv_php_version: 7.2.0
+anyenv_phpenv_dir: "{{ anyenv_dir }}/envs/phpenv"
+anyenv_php_version_dir: "{{ anyenv_phpenv_dir }}/versions/{{ anyenv_php_version }}"
+anyenv_php_dependencies:
+  - curl-devel
+  - openssl-devel
+  - libjpeg-devel
+  - libpng-devel
+  - libXpm-devel
+  - libxml2-devel
+  - libmcrypt-devel
+  - readline-devel
+  - bzip2-devel
+  - freetype-devel
+  - libicu-devel
+  - enchant-devel
+  - libxslt-devel
+  - libtidy-devel
+  - unixODBC-devel
+  - bison
+  - re2c
+php_ini_change_lines:
+  - regexp: '^error_reporting'
+    line: 'error_reporting = E_ALL'
+  - regexp: '^display_errors'
+    line: 'display_errors = On'
+  - regexp: '^upload_max_filesize'
+    line: 'upload_max_filesize = 8M'
+  - regexp: '^;?date.timezone'
+    line: 'date.timezone = "Asia/Tokyo"'
+  - regexp: '^;?mbstring.language'
+    line: 'mbstring.language = Japanese'
+  - regexp: '^;?mbstring.internal_encoding'
+    line: 'mbstring.internal_encoding = UTF-8'
+www_conf_change_lines:
+  - regexp: '^user'
+    line: "user = {{ executor_name }}"
+  - regexp: '^group'
+    line: "group = {{ executor_name }}"
+  - regexp: '^;?php_admin_value\[memory_limit\]'
+    line: 'php_admin_value[memory_limit] = 1024M'
+  - regexp: ';?\s?pm\s='
+    line: 'pm = static'
+  - regexp: ';?\s?pm.max_children\s='
+    line: 'pm.max_children = 4'
+  - regexp: ';?\s?pm.max_requests\s='
+    line: 'pm.max_requests = 500'
